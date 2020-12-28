@@ -1,0 +1,188 @@
+﻿
+@{
+    ViewData["Title"] = "Index";
+}
+
+<table id="myTable" border="1">
+    <thead>
+        <tr>
+            <th>Car</th>
+            <th>Action Buttons</th>
+        </tr>
+    </thead>
+    <tbody>
+
+    </tbody>
+</table>
+
+
+<!-- Button trigger modal -->
+<button type="button" class="btn btn-primary" data-toggle="modal" onclick="addCar()">
+    Add
+</button>
+
+<!-- Modal -->
+<div class="modal fade" id="modalCar" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel"></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div>
+                    <label>Make</label>
+                    <input id="txtMake" type="text" />
+                </div>
+                <div>
+                    <label>Model</label>
+                    <input id="txtModel" type="text" />
+                </div>
+                <div>
+                    <label>Plate Number</label>
+                    <input id="txtPlateNum" type="text" />
+                </div>
+                <div>
+                    <label>Color</label>
+                    <input id="txtColor" type="text" />
+                </div>
+                <div>
+                    <label>Engine Size</label>
+                    <input id="numEngineSize" type="number" />
+                </div>
+                <div>
+                    <label>Is Electric?</label>
+                    <input id="chkIsElectric" type="checkbox" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCar()">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    @section Scripts {
+        <script type="text/javascript">
+
+            function addCar() {
+                $('#txtMake').val('');
+                $('#txtModel').val('');
+                $('#txtPlateNum').val('');
+                $('#txtColor').val('');
+                $('#numEngineSize').val('');
+                $('#chkIsElectric').val(false);
+
+                $('#exampleModalLabel').text('Add New Car');
+
+                $('#modalCar').attr('data-save-mode', 'add');
+                $('#modalCar').attr('data-car-id', 0);
+
+                $('#modalCar').modal('toggle');
+            }
+
+            function editCar(id) {
+                $.ajax({
+                    url: 'https://localhost:44323/api/cars/' + id,
+                    type: 'GET',
+                    contentType: "application/json; charset=utf-8",
+                    success: function (result) {
+                        $('#txtMake').val(result.make);
+                        $('#txtModel').val(result.model);
+                        $('#txtPlateNum').val(result.plateNumber);
+                        $('#txtColor').val(result.color);
+                        $('#numEngineSize').val(result.engineSizeInCC);
+                        $('#chkIsElectric').val(result.isElectric);
+
+                        $('#exampleModalLabel').text('Edit Car');
+
+                        $('#modalCar').attr('data-car-id', result.id);
+                        $('#modalCar').attr('data-save-mode', 'edit');
+
+                        $('#modalCar').modal('toggle');
+                    },
+                    error: function (error) {
+                        alert(JSON.stringify(error));
+                    }
+                })
+            }
+
+            function saveCar() {
+                var carData = {
+                    Make: $('#txtMake').val(),
+                    Model: $('#txtModel').val(),
+                    PlateNumber: $('#txtPlateNum').val(),
+                    Color: $('#txtColor').val(),
+                    EngineSizeInCC: parseFloat($('#numEngineSize').val()),
+                    IsElectric: $('#chkIsElectric').is(':checked'),
+                    Id: parseInt($('#modalCar').attr('data-car-id'))
+                }
+
+                if ($('#modalCar').attr('data-save-mode') == 'add') {
+                    $.ajax({
+                        url: 'https://localhost:44323/api/cars',
+                        type: 'POST',
+                        contentType: "application/json; charset=utf-8",
+                        data: JSON.stringify(carData),
+                        success: function () {
+                            location.reload();
+                        },
+                        error: function (error) {
+                            alert(JSON.stringify(error));
+                        }
+                    });
+                } else if ($('#modalCar').attr('data-save-mode') == 'edit') {
+                    $.ajax({
+                        url: 'https://localhost:44323/api/cars',
+                        type: 'PUT',
+                        contentType: "application/json; charset=utf-8",
+                        data: JSON.stringify(carData),
+                        success: function () {
+                            location.reload();
+                        },
+                        error: function (error) {
+                            alert(JSON.stringify(error));
+                        }
+                    })
+                } else {
+                    //do nothing
+                }
+            }
+
+            function deleteCar(id) {
+                if (confirm('Delete car?')) {
+                    $.ajax({
+                        url: 'https://localhost:44323/api/cars/' + id,
+                        type: 'DELETE',
+                        success: function () {
+                            alert('Car successfully deleted')
+                            location.reload();
+                        },
+                        error: function (error) {
+                            alert(JSON.stringify(error));
+                        }
+                    });
+                }
+            }
+
+            $(function () {
+                //populate table
+                $.ajax({
+                    url: 'https://localhost:44323/api/cars',
+                    type: 'GET',
+                    success: function (result) {
+                        for (var i = 0; i < result.length; i++) {
+                            $('#myTable tbody').append('<tr><td>' + result[i].make + ' ' + result[i].model +
+                                '</td><td><button onclick="editCar(' + result[i].id + ')">Edit</button><button onclick="deleteCar(' + result[i].id + ')">Delete</button></td></tr>');
+                        }
+                    },
+                    error: function (error) {
+                        alert(JSON.stringify(error));
+                    }
+                });
+            })
+        </script>
+    }
